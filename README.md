@@ -1,5 +1,5 @@
 # spotify_data
-mport pandas as pd
+import pandas as pd
 from datetime import timedelta
 
 file_path = r"D:\Data_Analysis\Projects\spotify_data\DataSet\spotify_history.xlsx"
