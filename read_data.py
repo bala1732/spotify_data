@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import timedelta
+import os
 
 # Change this to the actual path of your Excel file
 file_path = r"D:\Data_Analysis\Projects\spotify_data\DataSet\spotify_history.xlsx"
@@ -69,6 +70,98 @@ def generate_top_10_trending_songs(file_path):
         print(f"Error generating top 10 trending songs: {e}")
 
 
+
+def generate_top_10_all_time_songs(file_path):
+    try:
+        if not os.path.exists(file_path):
+            print(f"File not found: {file_path}")
+            return
+
+        # Force all data as string to prevent Excel from converting to time
+        df = pd.read_excel(file_path, engine='openpyxl', dtype=str)
+
+        if 'track_name' not in df.columns or 'ms_played' not in df.columns:
+            print("Required columns ('track_name', 'ms_played') are missing.")
+            return
+
+        # Convert ms_played safely
+        def safe_ms(val):
+            try:
+                if isinstance(val, str) and ':' in val:
+                    h, m, s = map(int, val.split(':'))
+                    return (h * 3600 + m * 60 + s) * 1000
+                return float(val)
+            except:
+                return None
+
+        df['ms_played'] = df['ms_played'].apply(safe_ms)
+        df = df.dropna(subset=['track_name', 'ms_played'])
+
+        top_tracks = (
+            df.groupby('track_name')['ms_played']
+            .sum()
+            .sort_values(ascending=False)
+            .head(10)
+            .reset_index()
+        )
+
+        output_dir = "ResultData"
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, "top_10_all_time_songs.xlsx")
+        top_tracks.to_excel(output_file, index=False)
+
+        print(f"Top 10 all-time songs saved to '{output_file}'")
+
+    except Exception as e:
+        print(f"Error generating top 10 all-time songs: {e}")
+
+
+def generate_least_10_listening_songs(file_path):
+    try:
+        if not os.path.exists(file_path):
+            print(f"File not found: {file_path}")
+            return
+
+        # Read data as string to avoid Excel misformatting
+        df = pd.read_excel(file_path, engine='openpyxl', dtype=str)
+
+        if 'track_name' not in df.columns or 'ms_played' not in df.columns:
+            print("Required columns ('track_name', 'ms_played') are missing.")
+            return
+
+        # Clean ms_played field
+        def safe_ms(val):
+            try:
+                if isinstance(val, str) and ':' in val:
+                    h, m, s = map(int, val.split(':'))
+                    return (h * 3600 + m * 60 + s) * 1000
+                return float(val)
+            except:
+                return None
+
+        df['ms_played'] = df['ms_played'].apply(safe_ms)
+        df = df.dropna(subset=['track_name', 'ms_played'])
+
+        # Group and get bottom 10 (least played)
+        least_tracks = (
+            df.groupby('track_name')['ms_played']
+            .sum()
+            .sort_values(ascending=True)
+            .head(10)
+            .reset_index()
+        )
+
+        output_dir = "ResultData"
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, "least_10_songs.xlsx")
+        least_tracks.to_excel(output_file, index=False)
+
+        print(f"Least 10 all-time songs saved to '{output_file}'")
+
+    except Exception as e:
+        print(f"Error generating least 10 songs: {e}")
+
+
 # Example usage
 if __name__ == "__main__":
     # Read column values
@@ -76,5 +169,13 @@ if __name__ == "__main__":
     print("Column values:")
     print(values)
 
-    # Generate top 10 trending songs
+    # Generate top 10 trending songs (Based on treanding so we include dates)  - scenario-1
     generate_top_10_trending_songs(file_path)
+
+    #Generate top 10 all time songs - scenario-2
+    generate_top_10_all_time_songs(file_path)
+
+    #Generate least 10 lesting songs - scenario-3
+    generate_least_10_listening_songs(file_path)
+
+
